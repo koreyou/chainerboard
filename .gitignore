@@ -1,0 +1,29 @@
+###### Editor debris ########
+
+*.org
+*~
+¥#*
+
+# spyder
+.spyderproject/
+
+# pycharm
+**/.idea/
+
+# pyenv
+.python-version
+
+# setuptool and py.test
+.cache/
+.coverage
+htmlcov/
+.eggs/
+*.egg-info/
+build/
+doc/source/modules/
+doc/build/
+dist/
+
+###### Python debris ########
+
+*.pyc
