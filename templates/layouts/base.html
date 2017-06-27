@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+
+<head>
+  <!-- We prefer static data than CDN because client may not have internet connection -->
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/tether.min.css') }}" />
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}" />
+  <title>chainerboard: {% block title %}{% endblock %}</title>
+  {% block header %}{% endblock %}
+</head>
+
+<body>
+
+<nav class="navbar navbar-toggleable-md fixed-top navbar-light bg-faded">
+  <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <a class="navbar-brand" href="#">chainerboard</a>
+  <div class="collapse navbar-collapse" id="navbarNavDropdown">
+    <ul class="navbar-nav">
+      <li class="nav-item {% block nav_active_events %}{% endblock %}">
+        <a class="nav-link" href="#">Events </span></a>
+      </li>
+      <li class="nav-item {% block nav_active_page2 %}{% endblock %}">
+        <a class="nav-link" href="#">Features</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container-fluid">
+{% block content %}{% endblock %}
+</div><!-- /.container-fluid -->
+
+</body>
+
+
+<footer>
+  <script src="{{ url_for('static', filename='js/jquery-2.1.4.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/tether.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/angular.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/plotly-1.28.3.min.js') }}"></script>
+  <script type="text/javascript">
+    var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+  </script>
+  {% block footer %}{% endblock %}
+</footer>
+
+</html>
+
+
