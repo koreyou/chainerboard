@@ -8,13 +8,29 @@
 {% block nav_active_events %}active{% endblock %}
 {% block content %}
 <div ng-app="myApp" ng-controller="eventsGraphCtrl as myCtrl">
-    <div ng-repeat="g in myCtrl.graphs track by $index">
-      <h3>[[g.name]]</h3><div id="[[g.name]]" graph-container-shown="[[$index]]"></div>
+<div id="accordion" role="tablist" aria-multiselectable="true">
+<div class="row">
+  <div ng-repeat="g in myCtrl.graphs track by $index" class="col-sm-4">
+    <div class="card">
+      <div class="card-header" role="tab" id="heading[[g.name]]">
+        <h5 class="mb-0">
+          <a data-toggle="collapse" ng-href="#collapse[[g.name]]" aria-expanded="true" aria-controls="collapse[[g.name]]">
+            [[g.name]]
+          </a>
+        </h5>
+      </div>
+      <div id="collapse[[g.name]]" class="collapse show" role="tabpanel" aria-labelledby="heading[[g.name]]">
+        <div class="card-block">
+          <div id="[[g.name]]" graph-container-shown="[[$index]]"></div>
+        </div>
+      </div>
     </div>
+  </div>
+</div>
+
+</div>
 </div>
 {% endblock %}
-
 {% block footer %}
-  <script src="{{ url_for('static', filename='js/plotly-basic.js') }}"></script>
   <script src="{{ url_for('static', filename='js/events.js') }}"></script>
 {% endblock %}
