@@ -1,8 +1,10 @@
-#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function
 
 import json
 import os
 import re
+import logging
 
 import click
 import colorlover as cl
@@ -12,8 +14,12 @@ from flask import Flask, render_template, redirect, url_for, Response
 
 import chainerboard
 
-script_dir = os.path.dirname(__file__)
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+script_dir = os.path.dirname(__file__)
 
 app = Flask(
     __name__,
@@ -26,9 +32,18 @@ logdir = None
 
 
 def load_data():
+    """
+    Aggregate records and crete timeline data that is suitable for drawing
+    plots.
+
+    Returns:
+        dict: Key is the label of data. Each value is a ``dict`` with an
+            element ``"globalstep"`` (list of int) and the ``"values"``
+            (list of float)
+    """
     global logdir
     reporter = chainerboard.Reporter.load(logdir)
-    print 'loaded json'
+    logger.info('loaded json')
     return reporter.to_timeline()
 
 
@@ -118,7 +133,7 @@ def add_numbers():
         graphs=graphs_json
     )
 
-    print 'created graph json'
+    logger.info('created graph json')
     # do not use jsonify because we want to use custom encoder
     return Response(ret, mimetype='application/json')
 
