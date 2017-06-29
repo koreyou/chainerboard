@@ -59,7 +59,7 @@ def index():
     return redirect(url_for('events'))
 
 
-@app.route('/events.html')
+@app.route('/events')
 def events():
     return render_template('layouts/events.html')
 
@@ -86,8 +86,8 @@ def combine_jsons(**kwargs):
     return pattern.sub(lambda x: search_str[x.group()], ret)
 
 
-@app.route('/events/data')
-def add_numbers():
+@app.route('/events/data', methods=['GET'])
+def get_events_data():
     graphs = []
     timeline = load_data()
     colorpalette = cl.to_numeric(cl.scales['7']['qual']['Set1'])
