@@ -12,16 +12,16 @@
 <div class="row">
   <div ng-repeat="g in myCtrl.graphs track by $index" class="col-sm-4">
     <div class="card">
-      <div class="card-header" role="tab" id="heading[[g.name]]">
+      <div class="card-header" role="tab" id="heading[[g]]">
         <h5 class="mb-0">
-          <a data-toggle="collapse" ng-href="#collapse[[g.name]]" aria-expanded="true" aria-controls="collapse[[g.name]]">
-            [[g.name]]
+          <a data-toggle="collapse" ng-href="#collapse[[g]]" aria-expanded="true" aria-controls="collapse[[g]]">
+            [[g]]
           </a>
         </h5>
       </div>
-      <div id="collapse[[g.name]]" class="collapse show" role="tabpanel" aria-labelledby="heading[[g.name]]">
+      <div id="collapse[[g]]" class="collapse show" role="tabpanel" aria-labelledby="heading[[g]]">
         <div class="card-block">
-          <div id="[[g.name]]" graph-container-shown="[[$index]]"></div>
+          <div id="[[g]]" graph-container-shown="[[$index]]"></div>
         </div>
       </div>
     </div>

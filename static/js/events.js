@@ -6,6 +6,7 @@
 
 var app = angular.module('myApp',[]);
 
+
 app.config(function($interpolateProvider) {
   $interpolateProvider.startSymbol('[[');
   $interpolateProvider.endSymbol(']]');
@@ -14,34 +15,64 @@ app.config(function($interpolateProvider) {
 app.directive('graphContainerShown', function($log) {
     return function(scope, element, attrs) {
         attrs.$observe('graphContainerShown', function (i) {
-            Plotly.plot(scope.myCtrl.graphs[i].name, // the ID of the div
-                scope.myCtrl.graphs[i].graph.data,
-                scope.myCtrl.graphs[i].graph.layout || {});
-
+            scope.myCtrl.getEventsData(
+                scope.myCtrl.graphs[i],
+                function (graph){
+                    Plotly.plot(scope.myCtrl.graphs[i], // the ID of the div
+                        graph.data,
+                        graph.layout || {});
+                }
+            );
         });
     };
 });
 
-app.controller('eventsGraphCtrl', ['$log', '$http',
-function($log, $http) {
+app.controller('eventsGraphCtrl', ['$log', '$http', '$interval',
+function($log, $http, $interval) {
 
 var self = this;
 self.graphs = [];
 
-$http.get($SCRIPT_ROOT + '/events/data').
-then(function(response) {
-    $log.info("success");
-    var d = response.data;
-    $.each(d.graphs, function(i, g) {
-        self.graphs.push({
-            'name': d.ids[i],
-            'graph': g
-        });
+self.getEventsData = function (graphId, func) {
+    // func should take "graph" and display the graph
+    $log.info("Getting graph data for " + graphId);
+    $http.get($SCRIPT_ROOT + '/events/data', {
+        'params': {'graphId': graphId}
+    }).
+    then(function(response) {
+        func(response.data);
+    }, function(response) {
+        alert("error");
     });
+};
 
+self.redraw = function (graphId) {
+    self.getEventsData(
+        graphId,
+        function (graph){
+            Plotly.update(
+              graphId, // the ID of the div
+              graph.data, {});
+        }
+    );
+};
+
+$http.get($SCRIPT_ROOT + '/events/plots').
+then(function(response) {
+    $log.info("Getting plots list");
+    $.each(response.data, function(i, id) {
+        self.graphs.push(id);
+    });
+    $log.info("collected " + self.graphs);
 }, function(response) {
     alert("error");
 });
+
+$interval(function () {
+    $.each(self.graphs, function(i, graphId) {
+        self.redraw(graphId);
+    });
+}, 5000);
 
 
 }]);
