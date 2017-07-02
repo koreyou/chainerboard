@@ -103,9 +103,23 @@ def get_events_data():
     graph = dict(
          data=data,
          layout=dict(
-            title=g,
-            xaxis={'title': 'steps'},
-            yaxis={'type': 'log'}
+            title=None,
+            xaxis={'title': 'iterations'},
+            yaxis={'type': 'log'},
+            autosize=True,
+            margin={
+                'l': 15,
+                'r': 0,
+                'b': 30,
+                't': 0,
+                'pad': 0
+            },
+            legend={
+                'x': 0,
+                'y': -0.2
+            },
+            hidesources=True,
+
          )
     )
 
