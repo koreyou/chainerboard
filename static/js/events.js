@@ -21,6 +21,7 @@ app.directive('graphContainerShown', function($log) {
                     Plotly.plot(scope.myCtrl.graphs[i], // the ID of the div
                         graph.data,
                         graph.layout || {});
+                    scope.myCtrl.graphsToUpdate.push(scope.myCtrl.graphs[i]);
                 }
             );
         });
@@ -32,6 +33,7 @@ function($log, $http, $interval) {
 
 var self = this;
 self.graphs = [];
+self.graphsToUpdate = [];
 
 self.getEventsData = function (graphId, func) {
     // func should take "graph" and display the graph
@@ -69,7 +71,7 @@ then(function(response) {
 });
 
 $interval(function () {
-    $.each(self.graphs, function(i, graphId) {
+    $.each(self.graphsToUpdate, function(i, graphId) {
         self.redraw(graphId);
     });
 }, 5000);

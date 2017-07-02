@@ -1,3 +1,3 @@
-__all__ = ['reporter']
+__all__ = ['timeline_handler']
 
-from reporter import Reporter
+from chainerboard.timeline_handler import TimelineHandler

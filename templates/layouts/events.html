@@ -12,14 +12,15 @@
 <div class="row">
   <div ng-repeat="g in myCtrl.graphs track by $index" class="col-sm-4">
     <div class="card">
-      <div class="card-header" role="tab" id="heading[[g]]">
+      <!-- We use $index for id because slash is not allowed in id -->
+      <div class="card-header" role="tab" id="heading-$index">
         <h5 class="mb-0">
-          <a data-toggle="collapse" ng-href="#collapse[[g]]" aria-expanded="true" aria-controls="collapse[[g]]">
+          <a data-toggle="collapse" href="#collapse-[[$index]]" aria-expanded="true" aria-controls="collapse-[[$index]]">
             [[g]]
           </a>
         </h5>
       </div>
-      <div id="collapse[[g]]" class="collapse show" role="tabpanel" aria-labelledby="heading[[g]]">
+      <div id="collapse-[[$index]]" class="collapse show" role="tabpanel" aria-labelledby="heading-[[$index]]">
         <div class="card-block">
           <div id="[[g]]" graph-container-shown="[[$index]]"></div>
         </div>

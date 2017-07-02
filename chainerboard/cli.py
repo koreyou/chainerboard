@@ -28,7 +28,7 @@ app = Flask(
 )
 app.debug = True
 
-logdir = None
+logpath = None
 timeline = None
 
 
@@ -42,10 +42,11 @@ def load_data():
             element ``"globalstep"`` (list of int) and the ``"values"``
             (list of float)
     """
-    global logdir
-    reporter = chainerboard.Reporter.load(logdir)
+    global logpath, timeline
+    with open(logpath) as fin:
+        data = json.load(fin)
+    timeline.update(data)
     logger.info('loaded json')
-    return reporter.to_timeline()
 
 
 def moving_average(x, y, window):
@@ -67,7 +68,7 @@ def events():
 
 @app.route('/events/plots', methods=['GET'])
 def get_events_plots():
-    ids = timeline.keys()
+    ids = timeline.get_events_ids()
     return jsonify(ids)
 
 
@@ -75,27 +76,26 @@ def get_events_plots():
 def get_events_data():
     g = request.args.get('graphId')
     logger.info(g)
-    group = timeline[g]
     colorpalette = cl.to_numeric(cl.scales['7']['qual']['Set1'])
 
     data = []
-    for (l, d), color in zip(group.iteritems(), colorpalette):
+    for group, color in zip([timeline.events[g]], colorpalette):
         color = '#{:02X}{:02X}{:02X}'.format(*map(int, color))
         data.append(dict(
-            x=d[0],
-            y=d[1],
+            x=group.iteration,
+            y=group.value,
             type='scatter',
             marker={'color': color},
-            name=l,
+            name=g,
             opacity=0.3,
         ))
-        if len(d[0]) > 11:
-            x, y = moving_average(d[0], d[1], 11)
+        if len(group.iteration) > 11:
+            x, y = moving_average(group.iteration, group.value, 11)
             data.append(dict(
                 x=x,
                 y=y,
                 type='scatter',
-                name=l + '(window=11)',
+                name=g + '(window=11)',
                 marker={'color': color},
                 opacity=0.9
             ))
@@ -120,7 +120,8 @@ def get_events_data():
 @click.argument('inputfile', type=click.Path(exists=True))
 @click.option('-p', '--port', type=int, default=6006)
 def cli(inputfile, port):
-    global logdir, timeline
-    logdir = inputfile
-    timeline = load_data()
+    global logpath, timeline
+    logpath = inputfile
+    timeline = chainerboard.TimelineHandler()
+    load_data()
     app.run(host='0.0.0.0', port=port)
