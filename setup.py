@@ -28,10 +28,7 @@ setup(
     license='MIT',
     install_requires=[
         'Click',
-        'flask',
-        'plotly',
-        'colorlover',
-        'numpy'
+        'flask'
     ],
     entry_points = {
         'console_scripts': ['chainerboard=chainerboard.cli:cli'],

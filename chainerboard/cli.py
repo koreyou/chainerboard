@@ -4,14 +4,9 @@ from __future__ import absolute_import, division, print_function
 import json
 import logging
 import os
-import re
 
 import click
-import colorlover as cl
-import numpy as np
-import plotly
-from flask import Flask, render_template, redirect, url_for, Response, jsonify, \
-    request
+from flask import Flask, render_template, redirect, url_for, jsonify, request
 
 import chainerboard
 
@@ -49,13 +44,6 @@ def load_data():
     logger.info('loaded json')
 
 
-def moving_average(x, y, window):
-    weights = np.repeat(1.0, window) / window
-    ma = np.convolve(y, weights, 'valid')
-    x = x[window // 2:len(y) - (window // 2)]
-    return x, ma
-
-
 @app.route('/')
 def index():
     return redirect(url_for('events'))
@@ -76,58 +64,13 @@ def get_events_plots():
 def get_events_data():
     g = request.args.get('graphId')
     logger.info(g)
-    colorpalette = cl.to_numeric(cl.scales['7']['qual']['Set1'])
 
-    data = []
-    for group, color in zip([timeline.events[g]], colorpalette):
-        color = '#{:02X}{:02X}{:02X}'.format(*map(int, color))
-        data.append(dict(
-            x=group.iteration,
-            y=group.value,
-            type='scatter',
-            marker={'color': color},
-            name=g,
-            opacity=0.3,
-        ))
-        if len(group.iteration) > 11:
-            x, y = moving_average(group.iteration, group.value, 11)
-            data.append(dict(
-                x=x,
-                y=y,
-                type='scatter',
-                name=g + '(window=11)',
-                marker={'color': color},
-                opacity=0.9
-            ))
+    data = {
+        'x': timeline.events[g].iteration,
+        'y': timeline.events[g].value
+    }
 
-    graph = dict(
-         data=data,
-         layout=dict(
-            title=None,
-            xaxis={'title': 'iterations'},
-            yaxis={'type': 'log'},
-            autosize=True,
-            margin={
-                'l': 15,
-                'r': 0,
-                'b': 30,
-                't': 0,
-                'pad': 0
-            },
-            legend={
-                'x': 0,
-                'y': -0.2
-            },
-            hidesources=True,
-
-         )
-    )
-
-    graph_json = json.dumps(graph, cls=plotly.utils.PlotlyJSONEncoder)
-
-    logger.info('created graph json')
-    # do not use jsonify because we want to use custom encoder
-    return Response(graph_json, mimetype='application/json')
+    return jsonify(data)
 
 
 @click.command()
