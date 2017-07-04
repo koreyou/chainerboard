@@ -25,8 +25,13 @@
           <div id="[[g]]" graph-container-shown="[[$index]]"></div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label col-form-label-sm">Window</label>
-            <div class="col-sm-10">
+            <div class="col-sm-4">
               <input type="number" class="form-control form-control-sm" min=1 step=2 ng-model="myCtrl.movingAverageWindow[g]" ng-change="myCtrl.movingAverageChanged($index)"/>
+            </div>
+            <div class="col-sm-2">
+              <button type="button" class="btn btn-primary btn-sm" ng-class="{ 'active' : myCtrl.isLogarithmatic[g] }" ng-click="myCtrl.toggleLogarithmatic($index)">
+                Logarithmic
+              </button>
             </div>
           </div>
         </div>

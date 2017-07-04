@@ -19,6 +19,7 @@ app.directive('graphContainerShown', function($log) {
                 scope.myCtrl.graphs[i],
                 function (x, y){
                     var graphId = scope.myCtrl.graphs[i];
+                    var yaxisType = scope.myCtrl.isLogarithmatic[graphId] ? 'log' : 'linear';
                     scope.myCtrl.graphData[graphId] = {
                         "data": [
                             {
@@ -26,14 +27,14 @@ app.directive('graphContainerShown', function($log) {
                                 "y": y,
                                 'type': 'scatter',
                                 'marker': {'color': 'red'},
-                                'name': graphId,
+                                'showlegend': false,
                                 'opacity': 0.3
                             },
                             {
                                 "x": [],
                                 "y": [],
                                 "type": 'scatter',
-                                "name": graphId + '(window=11)',
+                                "name": graphId,
                                 "marker": {'color': 'red'},
                                 "opacity": 0.9
                             }
@@ -41,7 +42,7 @@ app.directive('graphContainerShown', function($log) {
                         "layout": {
                             "title": null,
                             "xaxis": {'title': 'iterations'},
-                            "yaxis": {'type': 'log'},
+                            "yaxis": {'type': yaxisType},
                             "autosize": true,
                             "margin": {
                                 'l': 15,
@@ -58,7 +59,7 @@ app.directive('graphContainerShown', function($log) {
                         }
                     };
                     scope.myCtrl.redraw(graphId);
-                    scope.myCtrl.graphsToUpdate.push(scope.myCtrl.graphs[i]);
+                    scope.myCtrl.isReady[graphId] = true;
                 }
             );
         });
@@ -96,8 +97,9 @@ function($log, $http, $interval) {
 var self = this;
 self.graphs = [];
 self.graphData = {};
-self.graphsToUpdate = [];
+self.isReady = {};
 self.movingAverageWindow = {};
+self.isLogarithmatic = {};
 
 self.redraw = function (graphId){
     // I wanted to use Plotly.update, but it looks like it's buggy
@@ -139,18 +141,30 @@ self.updateGraph = function (graphId) {
 
 
 self.movingAverageChanged = function (i) {
-    if (self.graphsToUpdate.length <= i){
-        return;
+    var graphId = self.graphs[i];
+    if (self.isReady[graphId]){
+        self.redraw(graphId);
     }
-    var graphId = self.graphsToUpdate[i];
-    self.redraw(graphId);
 };
+
+self.toggleLogarithmatic = function (i) {
+    var graphId = self.graphs[i];
+    if (self.isReady[graphId]){
+        self.isLogarithmatic[graphId] = !self.isLogarithmatic[graphId];
+        var yaxisType = self.isLogarithmatic[graphId] ? 'log' : 'linear';
+        self.graphData[graphId].layout.yaxis.type = yaxisType;
+        self.redraw(graphId);
+    }
+};
+
 
 $http.get($SCRIPT_ROOT + '/events/plots').
 then(function(response) {
     $log.info("Getting plots list");
     $.each(response.data, function(i, id) {
         self.movingAverageWindow[id] = 3;
+        self.isReady[id] = false;
+        self.isLogarithmatic[id] = false;
         self.graphs.push(id);
     });
     $log.info("collected " + self.graphs);
@@ -159,8 +173,10 @@ then(function(response) {
 });
 
 $interval(function () {
-    $.each(self.graphsToUpdate, function(i, graphId) {
-        self.updateGraph(graphId);
+    $.each(self.graphs, function(i, graphId) {
+        if (self.isReady[graphId]){
+            self.updateGraph(graphId);
+        }
     });
 }, 5000);
 
