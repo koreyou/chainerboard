@@ -258,9 +258,21 @@ class TimelineHandler(object):
         logger.debug("Ignored keys: %s" % ', '.join(map(str, dic.keys())))
 
     def update(self, logs):
-        for i in xrange(self._done_idx, len(logs)):
-            logger.debug('Parsing line:%d' % (i + 1))
-            self.extract(logs[i])
+        """
+        Update the handler from log dictionaries.
+        This function is idempotent.
+
+        ..warning :: I have not tested much that it is actually idempotent.
+
+        Args:
+            logs (list of dict): Parsed log file, each dict representing a
+                report from the single output of Reporter.
+
+        """
+        while self._done_idx < len(logs):
+            logger.info('Parsing line:%d' % (self._done_idx + 1))
+            self.extract(logs[self._done_idx])
+            self._done_idx += 1
 
     def get_events_ids(self):
         return self.events.keys()

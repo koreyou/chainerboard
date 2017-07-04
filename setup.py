@@ -28,7 +28,8 @@ setup(
     license='MIT',
     install_requires=[
         'Click',
-        'flask'
+        'flask',
+        'watchdog'
     ],
     entry_points = {
         'console_scripts': ['chainerboard=chainerboard.cli:cli'],
