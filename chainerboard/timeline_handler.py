@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
 
+import json
 import logging
 import re
 import string
@@ -276,3 +277,12 @@ class TimelineHandler(object):
 
     def get_events_ids(self):
         return self.events.keys()
+
+    def load(self, path):
+        """
+        Aggregate records and crete timeline data that is suitable for drawing
+        plots.
+        """
+        with open(path) as fin:
+            data = json.load(fin)
+        self.update(data)
