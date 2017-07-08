@@ -110,6 +110,8 @@ class MicroAverageTimeline(TimelineBase):
 
 class TensorTimeline(TimelineBase):
     """
+    Timeline for visualizing tensors. This is intended for logs from
+    [chainer.extensions.ParameterStatistics](https://docs.chainer.org/en/latest/reference/generated/chainer.training.extensions.ParameterStatistics.html)
 
     .. warning:: Class constructor has side effect to ``data_keys`` and
                  ``grad_keys``
@@ -119,10 +121,29 @@ class TensorTimeline(TimelineBase):
         grad_keys (dict): Mapping from metric name (str) to key string (str).
 
     """
+
+    _DEFAULT_PERCENTILE_KEYS = {
+        'percentile/0': r'0.13%',
+        'percentile/1': r'2.28%',
+        'percentile/2': r'15.87%',
+        'percentile/3': r'50%',
+        'percentile/4': r'84.13%',
+        'percentile/5': r'97.72%',
+        'percentile/6': r'99.87%',
+    }
     def __init__(self, data_keys, grad_keys):
         super(TensorTimeline, self).__init__()
         self._data_percentiles_keys = {
             k: data_keys.pop(k) for k in data_keys.keys() if k.startswith('percentile/')}
+        try:
+            self._data_percentiles_names = {
+                k: self._DEFAULT_PERCENTILE_KEYS[k]
+                for k in self._data_percentiles_keys.keys()
+            }
+        except KeyError:
+            self._data_percentiles_names = {
+                k: k for k in self._data_percentiles_keys.keys()
+            }
         self._data_percentiles = OrderedDict(
             ((k, []) for k in sorted(self._data_percentiles_keys.keys()))
         )
@@ -155,6 +176,15 @@ class TensorTimeline(TimelineBase):
         except KeyError:
             raise KeyDisappearedException(dic_key)
 
-    @property
-    def percentiles(self):
-        return self._data_percentiles
+    def get_percentiles(self):
+        percentiles = [
+            {'label': self._data_percentiles_names[k], 'data': v}
+            for k, v in self._data_percentiles.iteritems()
+        ]
+        if 'min' in self._data and 'max' in self._data:
+            percentiles = (
+                [{'label': 'min', 'data': self._data['min']}, ] +
+                percentiles +
+                [{'label': 'max', 'data': self._data['max']}, ]
+            )
+        return percentiles

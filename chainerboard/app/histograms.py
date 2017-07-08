@@ -25,8 +25,7 @@ def get_histograms_data():
 
     data = {
         'x': timeline_handler.tensors[g].iteration,
-        'y': [{'label': k, 'data': v} for k, v in
-              timeline_handler.tensors[g].percentiles.iteritems()]
+        'y': timeline_handler.tensors[g].get_percentiles()
     }
 
     return jsonify(data)

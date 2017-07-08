@@ -134,8 +134,7 @@ app.directive('graphContainerShown', function($log) {
                             'mode': "lines",
                             'line': {'width': 0},
                             'showlegend': false,
-                            "name": y[j].label,
-                            "opacity": 0.4 // This is to allow seeing the grid
+                            "name": y[j].label
                         };
                         if (j > 0) {
                             d.fill = 'tonexty';
@@ -143,6 +142,10 @@ app.directive('graphContainerShown', function($log) {
                             d.line.color = colors[j - 1];
                         } else {
                             d.line.color = colors[0];
+                        }
+                        if (y[j].label == '50%') {
+                            d.line.color = 'black';
+                            d.line.width = 3;
                         }
                         data.push(d);
                     }
