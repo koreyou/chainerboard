@@ -150,14 +150,12 @@ app.directive('graphContainerShown', function($log) {
                         data.push(d);
                     }
                     var graphId = scope.myCtrl.graphs[i];
-                    var yaxisType = scope.myCtrl.isLogarithmatic[graphId] ? 'log' : 'linear';
-
                     scope.myCtrl.graphData[graphId] = {
                         "data": data,
                         "layout": {
                             "title": null,
                             "xaxis": {'title': 'iterations'},
-                            "yaxis": {'type': yaxisType},
+                            "yaxis": {'type': 'linear'},
                             "autosize": true,
                             "margin": {
                                 'l': 15,
@@ -181,30 +179,6 @@ app.directive('graphContainerShown', function($log) {
     };
 });
 
-function movingAverage(x, y, window){
-    if(x.length <= window){
-        // Let's return nothing even for x.length == window because it's useless
-        return [[], []];
-    }
-    var i = 0;
-    var j = 0;
-    // Let's just interpolate y but not x
-    var total = 0.0;
-    var interpolatedY = [];
-    var interpolatedX = [];
-    for(; j < window; j++){
-        total += y[j];
-    }
-    var mid = (window + 1) / 2;
-    interpolatedY.push(total / window);
-    interpolatedX.push(x[i + mid - 1]);
-    for (; j < x.length; j++, i++){
-        total = total + y[j] - y[i];
-        interpolatedY.push(total / window);
-        interpolatedX.push(x[i + mid]);
-    }
-    return {'x': interpolatedX, 'y': interpolatedY};
-}
 
 app.controller('hitogramsGraphCtrl', ['$log', '$http', '$interval',
 function($log, $http, $interval) {
@@ -213,8 +187,6 @@ var self = this;
 self.graphs = [];
 self.graphData = {};
 self.isReady = {};
-self.movingAverageWindow = {};
-self.isLogarithmatic = {};
 
 self.redraw = function (graphId){
     Plotly.newPlot(
@@ -248,32 +220,11 @@ self.updateGraph = function (graphId) {
     );
 };
 
-
-self.movingAverageChanged = function (i) {
-    var graphId = self.graphs[i];
-    if (self.isReady[graphId]){
-        self.redraw(graphId);
-    }
-};
-
-self.toggleLogarithmatic = function (i) {
-    var graphId = self.graphs[i];
-    if (self.isReady[graphId]){
-        self.isLogarithmatic[graphId] = !self.isLogarithmatic[graphId];
-        var yaxisType = self.isLogarithmatic[graphId] ? 'log' : 'linear';
-        self.graphData[graphId].layout.yaxis.type = yaxisType;
-        self.redraw(graphId);
-    }
-};
-
-
 $http.get($SCRIPT_ROOT + '/histograms/plots').
 then(function(response) {
     $log.info("Getting plots list");
     $.each(response.data, function(i, id) {
-        self.movingAverageWindow[id] = 3;
         self.isReady[id] = false;
-        self.isLogarithmatic[id] = false;
         self.graphs.push(id);
     });
     $log.info("collected " + self.graphs);
