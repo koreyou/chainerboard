@@ -278,6 +278,9 @@ class TimelineHandler(object):
     def get_events_ids(self):
         return self.events.keys()
 
+    def get_tensors_ids(self):
+        return self.tensors.keys()
+
     def load(self, path):
         """
         Aggregate records and crete timeline data that is suitable for drawing

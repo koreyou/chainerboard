@@ -1,0 +1,48 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Histograms{% endblock %}
+{% block header %}
+  {{ super() }}
+{% endblock %}
+
+{% block nav_active_histograms %}active{% endblock %}
+{% block content %}
+<div ng-app="myApp" ng-controller="hitogramsGraphCtrl as myCtrl">
+<div id="accordion" role="tablist" aria-multiselectable="true">
+<div class="row">
+  <div ng-repeat="g in myCtrl.graphs track by $index" class="col-sm-4">
+    <div class="card">
+      <!-- We use $index for id because slash is not allowed in id -->
+      <div class="card-header" role="tab" id="heading-[[$index]]">
+        <h5 class="mb-0">
+          <a data-toggle="collapse" href="#collapse-[[$index]]" aria-expanded="true" aria-controls="collapse-[[$index]]">
+            [[g]]
+          </a>
+        </h5>
+      </div>
+      <div id="collapse-[[$index]]" class="collapse show" role="tabpanel" aria-labelledby="heading-[[$index]]">
+        <div class="card-block">
+          <div id="[[g]]" graph-container-shown="[[$index]]"></div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label col-form-label-sm">Window</label>
+            <div class="col-sm-4">
+              <input type="number" class="form-control form-control-sm" min=1 step=2 ng-model="myCtrl.movingAverageWindow[g]" ng-change="myCtrl.movingAverageChanged($index)"/>
+            </div>
+            <div class="col-sm-2">
+              <button type="button" class="btn btn-primary btn-sm" ng-class="{ 'active' : myCtrl.isLogarithmatic[g] }" ng-click="myCtrl.toggleLogarithmatic($index)">
+                Logarithmic
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+{% endblock %}
+{% block footer %}
+  <script src="{{ url_for('static', filename='js/histograms.js') }}"></script>
+{% endblock %}

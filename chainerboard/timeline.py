@@ -156,5 +156,5 @@ class TensorTimeline(TimelineBase):
             raise KeyDisappearedException(dic_key)
 
     @property
-    def value(self):
-        return self._value
+    def percentiles(self):
+        return self._data_percentiles

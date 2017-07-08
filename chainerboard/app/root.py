@@ -20,3 +20,8 @@ def index():
 @app.route('/events')
 def events():
     return render_template('layouts/events.html')
+
+
+@app.route('/histograms')
+def histograms():
+    return render_template('layouts/histograms.html')

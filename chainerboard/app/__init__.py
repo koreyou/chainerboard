@@ -23,5 +23,6 @@ app.debug = True
 timeline_handler = _chainerboard.TimelineHandler()
 
 # imports on bottom to avoid import loops
-import chainerboard.app.events
 import chainerboard.app.root
+import chainerboard.app.events
+import chainerboard.app.histograms
