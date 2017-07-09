@@ -7,10 +7,10 @@ try:
 except IOError:
     readme = ''
 
-
 name = 'chainerboard'
-version = '0.1'
-release = '0.1.0'
+exec(open('chainerboard/_version.py').read())
+release = __version__
+version = '.'.join(release.split('.')[:2])
 
 setup(
     name=name,
