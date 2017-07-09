@@ -23,8 +23,10 @@ setup(
     long_description=readme,
     url='https://github.com/koreyou/chainerboard',
     packages=[
-        'chainerboard'
+        'chainerboard',
+        'chainerboard.app'
     ],
+    include_package_data=True,
     license='MIT',
     install_requires=[
         'Click',
