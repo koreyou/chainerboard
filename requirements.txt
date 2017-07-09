@@ -1,0 +1,7 @@
+sphinx
+sphinx_rtd_theme
+Click
+twine
+tox
+Flask
+watchdog
