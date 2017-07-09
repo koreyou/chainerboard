@@ -4,8 +4,6 @@ from __future__ import absolute_import, division, print_function, \
 
 __all__ = ["app", "timeline_handler"]
 
-import os
-
 from flask import Flask
 
 import chainerboard as _chainerboard
@@ -13,8 +11,8 @@ import chainerboard as _chainerboard
 
 app = Flask(
     __name__,
-    template_folder=os.path.join('..', '..', 'templates'),
-    static_folder=os.path.join('..', '..', 'static')
+    template_folder='templates',
+    static_folder='static'
 )
 
 # FIXME: enable debug mode in beta
