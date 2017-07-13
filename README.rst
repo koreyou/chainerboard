@@ -54,9 +54,11 @@ To setup development environment:
 For testing,
 
 .. code:: bash
+
      tox
 
 Build document
 
 .. code:: bash
+
      python setup.py build_sphinx
