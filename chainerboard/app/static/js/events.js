@@ -100,6 +100,9 @@ self.graphData = {};
 self.isReady = {};
 self.movingAverageWindow = {};
 self.isLogarithmatic = {};
+self.updateInterval= 5;
+self.connected = true;
+self.next = self.updateInterval;
 
 self.redraw = function (graphId){
     // I wanted to use Plotly.update, but it looks like it's buggy
@@ -117,6 +120,7 @@ self.redraw = function (graphId){
 
 self.getEventsData = function (graphId, func) {
     // func should take x, y and display the graph
+    self.connected = true;
     $log.info("Getting graph data for " + graphId);
     $http.get($SCRIPT_ROOT + '/events/data', {
         'params': {'graphId': graphId}
@@ -124,7 +128,7 @@ self.getEventsData = function (graphId, func) {
     then(function(response) {
         func(response.data.x, response.data.y);
     }, function(response) {
-        alert("error");
+        self.connected = false;
     });
 };
 
@@ -161,6 +165,7 @@ self.toggleLogarithmatic = function (i) {
 $http.get($SCRIPT_ROOT + '/events/plots').
 then(function(response) {
     $log.info("Getting plots list");
+    self.connected = true;
     $.each(response.data, function(i, id) {
         self.movingAverageWindow[id] = 3;
         self.isReady[id] = false;
@@ -169,16 +174,21 @@ then(function(response) {
     });
     $log.info("collected " + self.graphs);
 }, function(response) {
-    alert("error");
+    self.connected = false;
 });
 
 $interval(function () {
-    $.each(self.graphs, function(i, graphId) {
-        if (self.isReady[graphId]){
-            self.updateGraph(graphId);
-        }
-    });
-}, 5000);
+    if (self.next == 0) {
+        self.next = self.updateInterval;
+        $.each(self.graphs, function(i, graphId) {
+            if (self.isReady[graphId]){
+                self.updateGraph(graphId);
+            }
+        });
+    } else {
+        self.next = self.next - 1;
+    }
+}, 1000);
 
 
 }]);

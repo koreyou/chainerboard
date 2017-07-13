@@ -187,6 +187,10 @@ var self = this;
 self.graphs = [];
 self.graphData = {};
 self.isReady = {};
+self.updateInterval= 5;
+self.connected = true;
+self.next = self.updateInterval;
+
 
 self.redraw = function (graphId){
     Plotly.newPlot(
@@ -201,9 +205,10 @@ self.getEventsData = function (graphId, func) {
         'params': {'graphId': graphId}
     }).
     then(function(response) {
+        self.connected = true;
         func(response.data.x, response.data.y);
     }, function(response) {
-        alert("error");
+        self.connected = false;
     });
 };
 
@@ -227,18 +232,25 @@ then(function(response) {
         self.isReady[id] = false;
         self.graphs.push(id);
     });
+    self.connected = true;
     $log.info("collected " + self.graphs);
 }, function(response) {
-    alert("error");
+    self.connected = false;
 });
 
+
 $interval(function () {
-    $.each(self.graphs, function(i, graphId) {
-        if (self.isReady[graphId]){
-            self.updateGraph(graphId);
-        }
-    });
-}, 5000);
+    if (self.next == 0) {
+        self.next = self.updateInterval;
+        $.each(self.graphs, function(i, graphId) {
+            if (self.isReady[graphId]){
+                self.updateGraph(graphId);
+            }
+        });
+    } else {
+        self.next = self.next - 1;
+    }
+}, 1000);
 
 
 }]);
