@@ -4,9 +4,6 @@
 
 'use strict';
 
-var app = angular.module('myApp',[]);
-
-
 
 /**
  * Convert a rgb color to hsl color. RGB color should in [0, 254] range and
@@ -111,12 +108,7 @@ function generateGradientColors(seed, n, alpha) {
     return colors;
 }
 
-app.config(function($interpolateProvider) {
-  $interpolateProvider.startSymbol('[[');
-  $interpolateProvider.endSymbol(']]');
-});
-
-app.directive('graphContainerShown', function($log) {
+angular.module('myApp').directive('graphContainerShown', function($log) {
     return function(scope, element, attrs) {
         attrs.$observe('graphContainerShown', function (i) {
             scope.myCtrl.getEventsData(
@@ -180,7 +172,7 @@ app.directive('graphContainerShown', function($log) {
 });
 
 
-app.controller('hitogramsGraphCtrl', ['$log', '$http', '$interval',
+angular.module('myApp').controller('hitogramsGraphCtrl', ['$log', '$http', '$interval',
 function($log, $http, $interval) {
 
 var self = this;

@@ -4,67 +4,8 @@
 
 'use strict';
 
-var app = angular.module('myApp',[]);
-
-app.config(function($interpolateProvider) {
-  $interpolateProvider.startSymbol('[[');
-  $interpolateProvider.endSymbol(']]');
-});
-
-function argDefault(arg, defaultValue) {
-    return arg = typeof arg !== 'undefined' ? arg : defaultValue;
-}
-
-
-function movingAverage(x, y, window){
-    if(x.length <= window){
-        // Let's return nothing even for x.length == window because it's useless
-        return [[], []];
-    }
-    var i = 0;
-    var j = 0;
-    // Let's just interpolate y but not x
-    var total = 0.0;
-    var interpolatedY = [];
-    var interpolatedX = [];
-    for(; j < window; j++){
-        total += y[j];
-    }
-    var mid = (window + 1) / 2;
-    interpolatedY.push(total / window);
-    interpolatedX.push(x[i + mid - 1]);
-    for (; j < x.length; j++, i++){
-        total = total + y[j] - y[i];
-        interpolatedY.push(total / window);
-        interpolatedX.push(x[i + mid]);
-    }
-    return {'x': interpolatedX, 'y': interpolatedY};
-}
-
-function createLayout(isLogarithmatic) {
-    var yaxisType = isLogarithmatic ? 'log' : 'linear';
-    return {
-        "title": null,
-        "xaxis": {'title': 'iterations'},
-        "yaxis": {'type': yaxisType},
-        "autosize": true,
-        "margin": {
-            'l': 15,
-            'r': 0,
-            'b': 30,
-            't': 0,
-            'pad': 0
-        },
-        "legend": {
-            'x': 0,
-            'y': -0.2
-        },
-        "hidesources": true
-    };
-}
-
-app.controller('eventsGraphCtrl', ['$log', '$http', '$interval', '$q', '$timeout',
-function($log, $http, $interval, $q, $timeout) {
+angular.module('myApp').controller('eventsGraphCtrl', ['$log', '$http', '$interval', '$q', '$timeout', 'common',
+function($log, $http, $interval, $q, $timeout, common) {
 
 var self = this;
 self.sessionId = '';  // 12 character id. Should be empty for uninitialized session
@@ -85,7 +26,7 @@ self.redraw = function (groupId) {
     }
     var data = [];
     $.each(self.groups[groupId], function (i, graphId) {
-        var ret = movingAverage(
+        var ret = common.movingAverage(
             self.graphData[graphId][0].x,
             self.graphData[graphId][0].y,
             self.movingAverageWindow[groupId]);
@@ -93,7 +34,7 @@ self.redraw = function (groupId) {
         self.graphData[graphId][1].y = ret.y;
         data = data.concat(self.graphData[graphId]);
     });
-    var layout = createLayout(self.isLogarithmatic[groupId]);
+    var layout = common.createLayout(self.isLogarithmatic[groupId]);
     // I wanted to use Plotly.update, but it looks like it's buggy
     Plotly.newPlot(
       groupId, // the ID of the div
@@ -120,30 +61,6 @@ self.getEventsData = function (graphId) {
         });
     });
 };
-
-function pollWithTimeout(fn, timeout, interval, initialDelay) {
-    interval = argDefault(interval, 10);
-    initialDelay = argDefault(initialDelay, 0);
-    return $q(function(resolve, reject) {
-        $timeout(function() {
-            if (fn()) {
-                // condition fulfilled
-                resolve();
-            } else {
-                var newInterval = timeout - interval - initialDelay;
-                if (newInterval > 0) {
-                    pollWithTimeout(fn, newInterval, interval)
-                    .then(
-                        function() {resolve();},
-                        function() {reject();}
-                    );
-                } else {
-                    reject();
-                }
-            }
-        }, interval + initialDelay);
-    });
-}
 
 self.movingAverageChanged = function (groupId) {
     self.redraw(groupId);
@@ -209,7 +126,7 @@ self.update = function() {
                 $.each(response.data.updates[groupId], function(i, graphId) {
                     promises.push(self.getEventsData(graphId));
                 });
-                promises.push(pollWithTimeout(
+                promises.push(common.pollWithTimeout(
                     function(id) { return function () {
                         return angular.element('#' + id).size() > 0;
                     };}(groupId), 2000, 200));
