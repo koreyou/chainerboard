@@ -108,142 +108,130 @@ function generateGradientColors(seed, n, alpha) {
     return colors;
 }
 
-angular.module('myApp').directive('graphContainerShown', function($log) {
-    return function(scope, element, attrs) {
-        attrs.$observe('graphContainerShown', function (i) {
-            scope.myCtrl.getEventsData(
-                scope.myCtrl.graphs[i],
-                function (x, y){
-                    var colors = generateGradientColors('red', y.length - 1, 0.5);
-                    var data = [];
-                    var d;
-                    for (var j = 0; j < y.length; j++) {
-                        d = {
-                            "x": x,
-                            "y": y[j].data,
-                            'type': 'scatter',
-                            // 0 width line because fill does not work with mode=none
-                            'mode': "lines",
-                            'line': {'width': 0},
-                            'showlegend': false,
-                            "name": y[j].label
-                        };
-                        if (j > 0) {
-                            d.fill = 'tonexty';
-                            d.fillcolor = colors[j - 1];
-                            d.line.color = colors[j - 1];
-                        } else {
-                            d.line.color = colors[0];
-                        }
-                        if (y[j].label == '50%') {
-                            d.line.color = 'black';
-                            d.line.width = 3;
-                        }
-                        data.push(d);
-                    }
-                    var graphId = scope.myCtrl.graphs[i];
-                    scope.myCtrl.graphData[graphId] = {
-                        "data": data,
-                        "layout": {
-                            "title": null,
-                            "xaxis": {'title': 'iterations'},
-                            "yaxis": {'type': 'linear'},
-                            "autosize": true,
-                            "margin": {
-                                'l': 15,
-                                'r': 0,
-                                'b': 30,
-                                't': 0,
-                                'pad': 0
-                            },
-                            "legend": {
-                                'x': 0,
-                                'y': -0.2
-                            },
-                            "hidesources": true
-                        }
-                    };
-                    scope.myCtrl.redraw(graphId);
-                    scope.myCtrl.isReady[graphId] = true;
-                }
-            );
-        });
-    };
-});
 
-
-angular.module('myApp').controller('hitogramsGraphCtrl', ['$log', '$http', '$interval',
-function($log, $http, $interval) {
+angular.module('myApp').controller('hitogramsGraphCtrl', ['$log', '$http', '$interval', '$q', 'common',
+function($log, $http, $interval, $q, common) {
 
 var self = this;
-self.graphs = [];
-self.graphData = {};
-self.isReady = {};
-self.updateInterval= 5;
-self.connected = true;
-self.next = self.updateInterval;
+self.sessionId = '';  // 12 character id. Should be empty for uninitialized session
+self.graphs = {}; // map from internal hash id to a graph id (str)
+self.hiddenGraphs = []; // list of graph ids (str)
+self.graphData = {};  // map graph id (str) -> graph obj (object)
+self.graphStates = {}; // map graph id (str) -> graph status hash (str)
+self.updateInterval= 5;  // Constant for update interval in second
+self.connected = true;  // Status of connection (bool)
+self.next = 0;  // time until the next update (int)
+self.layout = common.createLayout(false);
 
-
-self.redraw = function (graphId){
+self.redraw = function (groupId) {
+    if (angular.element('#' + groupId).size() == 0) {
+        return false;
+    }
+    // I wanted to use Plotly.update, but it looks like it's buggy
     Plotly.newPlot(
-      graphId, // the ID of the div
-      self.graphData[graphId].data, self.graphData[graphId].layout);
+      groupId, // the ID of the div
+      self.graphData[self.graphs[groupId]], self.layout);
+    return true;
 }
 
-self.getEventsData = function (graphId, func) {
-    // func should take x, y and display the graph
-    $log.info("Getting graph data for " + graphId);
-    $http.get($SCRIPT_ROOT + '/histograms/data', {
-        'params': {'graphId': graphId}
-    }).
+self.getPlotData = function (graphId) {
+    return $q(function(resolve, reject) {
+        $log.info("Getting graph data for " + graphId);
+        $http.get($SCRIPT_ROOT + '/histograms/data', {
+            'params': {'graphId': graphId}
+        }).
+        then(function(response) {
+            self.connected = true;
+            var colors = generateGradientColors('red', response.data.y.length - 1, 0.5);
+            var data = [];
+            for (var j = 0; j < response.data.y.length; j++) {
+                var d = {
+                    "x": response.data.x,
+                    "y": response.data.y[j].data,
+                    'type': 'scatter',
+                    // 0 width line because fill does not work with mode=none
+                    'mode': "lines",
+                    'line': {'width': 0},
+                    'showlegend': false,
+                    "name": response.data.y[j].label
+                };
+                if (j > 0) {
+                    d.fill = 'tonexty';
+                    d.fillcolor = colors[j - 1];
+                    d.line.color = colors[j - 1];
+                } else {
+                    d.line.color = colors[0];
+                }
+                if (response.data.y[j].label == '50%') {
+                    d.line.color = 'black';
+                    d.line.width = 3;
+                }
+                data.push(d);
+            }
+            self.graphData[graphId] = data;
+            self.graphStates[graphId] = response.data.stateHash;
+            $log.info("Updated graph " + graphId + " with hash " + response.data.stateHash);
+            resolve("operation successful");
+        }, function(response) {
+            self.connected = false;
+            reject("operation unsuccessful");
+        });
+    });
+};
+
+
+self.update = function() {
+    $log.info("Getting plots list");
+    $http.post($SCRIPT_ROOT + '/histograms/updates',
+        {
+            'active': self.graphs,
+            'states': self.graphStates,
+            'sessionId': self.sessionId
+        }
+    ).
     then(function(response) {
+        $log.debug("Received response from /histograms/updates");
         self.connected = true;
-        func(response.data.x, response.data.y);
+        self.sessionId = response.data.sessionId;
+        $.each(response.data.newPlots, function(i, newPlot) {
+            self.graphData[newPlot.graphId] = [];
+            self.graphStates[newPlot.graphId] = '';  // initialize with empty hash
+            if (newPlot.type == 'new') {
+                self.graphs[newPlot.graphDiv] = newPlot.graphId;
+            } else if (newPlot.type == 'hidden') {
+                self.hiddenGraphs.append(newPlot.graphId);
+            } else {
+                self.connected = false;
+                $log.error('Invalid newPlot.type ' + newPlot.type);
+            }
+            $log.debug("Added new plot " + newPlot);
+        });
+
+        $.each(response.data.updates, function(i, graphDiv) {
+            $q.all([
+                self.getPlotData(self.graphs[graphDiv]),
+                common.pollWithTimeout(
+                function(id) { return function () {
+                    return angular.element('#' + id).size() > 0;
+                };}(graphDiv), 2000, 200)
+            ])
+            .then(function (id) { return function () {
+                self.redraw(id);
+            };}(graphDiv));
+        });
     }, function(response) {
+        $log.error("Failed to receive resposne /histograms/updates");
         self.connected = false;
     });
 };
 
-self.updateGraph = function (graphId) {
-    self.getEventsData(
-        graphId,
-        function (x, y) {
-            for (var i = 0; i < self.graphData[graphId].data.length; i++) {
-                self.graphData[graphId].data[i].x = x;
-                self.graphData[graphId].data[i].y = y[i].data;
-            }
-            self.redraw(graphId);
-        }
-    );
-};
-
-$http.get($SCRIPT_ROOT + '/histograms/plots').
-then(function(response) {
-    $log.info("Getting plots list");
-    $.each(response.data, function(i, id) {
-        self.isReady[id] = false;
-        self.graphs.push(id);
-    });
-    self.connected = true;
-    $log.info("collected " + self.graphs);
-}, function(response) {
-    self.connected = false;
-});
-
-
 $interval(function () {
     if (self.next == 0) {
-        self.next = self.updateInterval;
-        $.each(self.graphs, function(i, graphId) {
-            if (self.isReady[graphId]){
-                self.updateGraph(graphId);
-            }
-        });
+        self.update();
     } else {
         self.next = self.next - 1;
     }
 }, 1000);
-
 
 }]);
 }());
