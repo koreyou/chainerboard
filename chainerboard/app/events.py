@@ -95,6 +95,7 @@ def get_events_updates():
             new_plots.append({
                 'type': 'new',
                 'groupId': group_id,  # create new group id
+                'name': g,
                 'graphId': g
             })
             active[group_id] = [g]

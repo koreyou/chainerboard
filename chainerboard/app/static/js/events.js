@@ -15,6 +15,7 @@ self.graphData = {};  // map graph id (str) -> graph obj (object)
 self.graphStates = {}; // map graph id (str) -> graph status hash (str)
 self.movingAverageWindow = {}; // map group id (str) -> window size (int)
 self.isLogarithmatic = {}; // map group id (str) -> if logarithmatic (bool)
+self.graphNames = {}; // map group id (str) -> graph name (str)
 self.updateInterval= 5;  // Constant for update interval in second
 self.connected = true;  // Status of connection (bool)
 self.next = 0;  // time until the next update (int)
@@ -108,6 +109,7 @@ self.update = function() {
                 // Create new group
                 self.movingAverageWindow[newPlot.groupId] = 3;
                 self.isLogarithmatic[newPlot.groupId] = false;
+                self.graphNames[newPlot.groupId] = newPlot.name;
                 self.groups[newPlot.groupId] = [newPlot.graphId];
             } else if (newPlot.type == 'hidden') {
                 self.hiddenGraphs.append(newPlot.graphId);
