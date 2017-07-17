@@ -4,6 +4,12 @@
 CHANGELOG
 =============
 
+v0.1.1
+-------------
+
+* Downgraded to more stable bootstrap 3
+* Connection error (distruption) is now handled more gracefully.
+* Prettified front end app.
 
 v0.1.0
 -------------
