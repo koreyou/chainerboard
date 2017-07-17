@@ -9,6 +9,7 @@ import logging
 from collections import OrderedDict
 
 from chainerboard.exceptions import KeyDisappearedException
+from chainerboard import util
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,10 @@ class KeyValuePair(object):
 class TimelineBase(object):
     def __init__(self):
         self._uninitialized = True
+        self._update_state_hash()
+
+    def _update_state_hash(self):
+        self._state_hash = util.random_hash(12)
 
     def _initialize_times(self, epoch, iteration, time_elapsed):
         self._epoch = None if epoch is None else []
@@ -40,13 +45,22 @@ class TimelineBase(object):
             self._elapsed_time.append(elapsed_time)
 
     def _extract_value_impl(self, dic, epoch, iteration, elapsed_time):
+        """
+        Implementation for extracting of values.
+        This function should return ``True`` if there were any updates otherwise
+        ``False``.
+        """
         raise NotImplementedError()
 
     def extract_value(self, dic, epoch, iteration, elapsed_time):
         if self._uninitialized:
             self._initialize_times(epoch, iteration, elapsed_time)
 
-        return self._extract_value_impl(dic, epoch, iteration, elapsed_time)
+        ret = self._extract_value_impl(dic, epoch, iteration, elapsed_time)
+        assert isinstance(ret, bool)
+        if ret:
+            self._update_state_hash()
+        return ret
 
     @property
     def elapsed_time(self):
@@ -60,6 +74,10 @@ class TimelineBase(object):
     def iteration(self):
         return self._iteration
 
+    @property
+    def state_hash(self):
+        return self._state_hash
+
 
 class Timeline(TimelineBase):
     def __init__(self, key):
@@ -69,12 +87,16 @@ class Timeline(TimelineBase):
         self._value = []
 
     def _extract_value_impl(self, dic, epoch, iteration, elapsed_time):
+        updated = False
         if self._key_std in dic:
             std = dic.pop(self._key_std)
+            updated = True
         if self._key in dic:
             val = dic.pop(self._key)
             self._value.append(val)
             self._append_time(epoch, iteration, elapsed_time)
+            updated = True
+        return updated
 
     @property
     def value(self):
@@ -89,6 +111,7 @@ class MicroAverageTimeline(TimelineBase):
         self._value = []
 
     def _extract_value_impl(self, dic, epoch, iteration, elapsed_time):
+        updated = False
         if self._correct_key in dic:
             # Assume that both keys are in dic
             correct = dic.pop(self._correct_key)
@@ -99,9 +122,11 @@ class MicroAverageTimeline(TimelineBase):
             micro_average = correct / float(total)
             self._value.append(micro_average)
             self._append_time(epoch, iteration, elapsed_time)
+            updated = False
         elif self._total_key in dic:
             # Only total_key exists in dic -> raise Error
             raise KeyDisappearedException(self._correct_key)
+        return updated
 
     @property
     def value(self):
@@ -161,8 +186,7 @@ class TensorTimeline(TimelineBase):
     def _extract_value_impl(self, dic, epoch, iteration, elapsed_time):
         if next(self._data_percentiles_keys.itervalues()) not in dic:
             # Assume tensor is absent in dic
-            return
-
+            return False
         self._append_time(epoch, iteration, elapsed_time)
         try:
             for k, dic_key in self._data_percentiles_keys.iteritems():
@@ -175,6 +199,7 @@ class TensorTimeline(TimelineBase):
                 self._grad[k].append(dic.pop(dic_key))
         except KeyError:
             raise KeyDisappearedException(dic_key)
+        return True
 
     def get_percentiles(self):
         percentiles = [

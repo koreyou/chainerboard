@@ -13,26 +13,26 @@
 </div>
 <div class="panel-group" id="#accordion" aria-multiselectable="true">
 <div class="row">
-  <div ng-repeat="g in myCtrl.graphs track by $index" class="col-sm-4">
+  <div ng-repeat="(group, graphs) in myCtrl.groups" class="col-sm-4">
     <div class="panel panel-default">
       <!-- We use $index for id because slash is not allowed in id -->
       <div class="panel-heading">
         <h5 class="mb-0">
-          <a data-toggle="collapse" href="#collapse-[[$index]]">
-            [[g]]
+          <a data-toggle="collapse" href="#collapse-[[group]]">
+            <div ng-bind="myCtrl.graphNames[group]"></div>
           </a>
         </h5>
       </div>
-      <div id="collapse-[[$index]]" class="panel-collapse collapse in">
+      <div id="collapse-[[group]]" class="panel-collapse collapse in">
         <div class="panel-body">
-          <div id="[[g]]" graph-container-shown="[[$index]]"></div>
+          <div id="[[group]]"></div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label col-form-label-sm">Window</label>
             <div class="col-sm-4">
-              <input type="number" class="form-control form-control-sm" min=1 step=2 ng-model="myCtrl.movingAverageWindow[g]" ng-change="myCtrl.movingAverageChanged($index)"/>
+              <input type="number" class="form-control form-control-sm" min=1 step=2 ng-model="myCtrl.movingAverageWindow[group]" ng-change="myCtrl.movingAverageChanged(group)"/>
             </div>
             <div class="col-sm-2">
-              <button type="button" class="btn btn-primary btn-sm" ng-class="{ 'active' : myCtrl.isLogarithmatic[g] }" ng-click="myCtrl.toggleLogarithmatic($index)">
+              <button type="button" class="btn btn-primary btn-sm" ng-class="{ 'active' : myCtrl.isLogarithmatic[group] }" ng-click="myCtrl.toggleLogarithmatic(group)">
                 Logarithmic
               </button>
             </div>

@@ -50,6 +50,7 @@
   <script type="text/javascript">
     var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
   </script>
+  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   {% block footer %}{% endblock %}
 </footer>
 
