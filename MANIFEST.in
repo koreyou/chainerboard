@@ -4,6 +4,8 @@ include doc/source/conf.py
 include doc/source/index.rst
 recursive-include chainerboard/app/static/css *.css
 recursive-include chainerboard/app/static/js *.js
+recursive-include chainerboard/app/static/fonts *.woff
+recursive-include chainerboard/app/static/fonts *.woffs
 recursive-include chainerboard/app/templates/layouts *.html
 include CHANGELOG.rst
 include LICENSE

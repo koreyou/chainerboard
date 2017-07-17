@@ -63,15 +63,6 @@ self.getEventsData = function (graphId) {
     });
 };
 
-self.movingAverageChanged = function (groupId) {
-    self.redraw(groupId);
-};
-
-self.toggleLogarithmatic = function (groupId) {
-    self.isLogarithmatic[groupId] = !self.isLogarithmatic[groupId];
-    self.redraw(groupId);
-};
-
 self.update = function() {
     $log.info("Getting plots list");
     $http.post($SCRIPT_ROOT + '/events/updates',
