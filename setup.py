@@ -31,7 +31,8 @@ setup(
     install_requires=[
         'Click',
         'flask',
-        'watchdog'
+        'watchdog',
+        'numpy>=1.10'
     ],
     entry_points = {
         'console_scripts': ['chainerboard=chainerboard.cli:cli'],

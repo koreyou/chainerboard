@@ -3,8 +3,10 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
+import warnings
 
 from flask import jsonify, request
+import numpy as np
 
 from chainerboard import util
 from chainerboard.app import app, timeline_handler
@@ -13,14 +15,49 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def _cleanse_plots(x, y):
+    """
+    Replace NaN, inf or large number that cause harm to 'nan' (str)
+
+    Accoding to ecma-262, largest possible value is 1.7976931348623157e308.
+    Let's make anything above 1.0e308 infinity.
+
+    Plotly can properly handle 'nan'.
+
+    Args:
+        x (list): index value of the timeline. We do not check for
+            invalid value within x.
+        y (list of float): Metric value to visualive.
+
+    Returns:
+        list: cleaned y
+
+    """
+    _FLOAT_CUTOFF_MAX = np.float(1.7976931348623157e308)
+    _FLOAT_CUTOFF_MIN = np.float(-1.7976931348623159e308)
+    x = np.asarray(x)
+    y = np.asarray(y)
+    assert len(x) == len(y)
+    mask = np.isfinite(y)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        if np.isfinite(_FLOAT_CUTOFF_MAX):
+            mask = np.logical_and(mask, y <= _FLOAT_CUTOFF_MAX)
+        if np.isfinite(_FLOAT_CUTOFF_MIN):
+            mask = np.logical_and(mask, y >= _FLOAT_CUTOFF_MIN)
+    return [y[i] if mask[i] else 'nan' for i in xrange(len(y))]
+
+
 @app.route('/events/data', methods=['GET'])
 def get_events_data():
     g = request.args.get('graphId')
     logger.info(g)
 
+    x, y = _cleanse_plots(timeline_handler.events[g].iteration,
+                       timeline_handler.events[g].value)
     data = {
-        'x': timeline_handler.events[g].iteration,
-        'y': timeline_handler.events[g].value,
+        'x': x,
+        'y': y,
         'stateHash': timeline_handler.events[g].state_hash
     }
 
