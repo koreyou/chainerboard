@@ -23,6 +23,7 @@ build/
 doc/source/modules/
 doc/build/
 dist/
+.tox/
 
 ###### Python debris ########
 
