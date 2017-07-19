@@ -23,22 +23,39 @@ self.movingAverage = function(x, y, window){
         // Let's return nothing even for x.length == window because it's useless
         return [[], []];
     }
-    var i = 0;
     var j = 0;
     // Let's just interpolate y but not x
-    var total = 0.0;
     var interpolatedY = [];
     var interpolatedX = [];
-    for(; j < window; j++){
-        total += y[j];
-    }
     var mid = (window + 1) / 2;
-    interpolatedY.push(total / window);
-    interpolatedX.push(x[i + mid - 1]);
-    for (; j < x.length; j++, i++){
-        total = total + y[j] - y[i];
+    while (j < x.length) {
+        var total = 0.0;
+        for(var i = 0; i < window; j++){
+            if (y[j] == 'nan') {
+                // just reset i and total
+                i = 0;
+                total = 0.0;
+            } else {
+                i = i + 1;
+                total += y[j];
+                if (j > mid) {
+                    interpolatedY.push('nan');
+                    interpolatedX.push(x[j - mid + 1]);
+                }
+            }
+        }
         interpolatedY.push(total / window);
-        interpolatedX.push(x[i + mid]);
+        interpolatedX.push(x[j - mid]);
+        for (; j < x.length; j++){
+            if (y[j] == 'nan') {
+                break;
+            }
+            var i = j - mid + 1;
+            total = total + y[j] - y[j - window];
+            interpolatedY.push(total / window);
+            interpolatedX.push(x[i]);
+        }
+
     }
     return {'x': interpolatedX, 'y': interpolatedY};
 };
