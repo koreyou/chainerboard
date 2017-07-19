@@ -4,6 +4,13 @@
 CHANGELOG
 =============
 
+v0.1.2
+-------------
+
+* Bugfix:
+
+    * Plotting fails when 'Infinity' is present (#2)
+
 v0.1.1
 -------------
 
