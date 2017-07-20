@@ -53,10 +53,10 @@ def get_events_data():
     g = request.args.get('graphId')
     logger.info(g)
 
-    x, y = _cleanse_plots(timeline_handler.events[g].iteration,
+    y = _cleanse_plots(timeline_handler.events[g].iteration,
                        timeline_handler.events[g].value)
     data = {
-        'x': x,
+        'x': timeline_handler.events[g].iteration,
         'y': y,
         'stateHash': timeline_handler.events[g].state_hash
     }
