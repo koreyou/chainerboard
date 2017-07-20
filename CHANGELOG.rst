@@ -4,6 +4,14 @@
 CHANGELOG
 =============
 
+v0.1.3
+-------------
+
+* Bugfix:
+
+    * Hot fix for a syntactic bug introduced in v0.1.2
+
+
 v0.1.2
 -------------
 
