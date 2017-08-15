@@ -4,6 +4,15 @@
 CHANGELOG
 =============
 
+v0.1.4
+-------------
+
+* Bugfix:
+
+    * Auto-update was not working
+    * It was occasionally causing OSError (#5)
+
+
 v0.1.3
 -------------
 
