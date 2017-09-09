@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
 
+import hashlib
 import json
 import logging
 import re
 import string
+import threading
 
 from chainerboard.exceptions import KeyDisappearedException, ParseError
 from chainerboard.timeline import Timeline, TensorTimeline, MicroAverageTimeline
+from chainerboard import util
 
 logger = logging.getLogger(__name__)
 
@@ -161,15 +164,54 @@ def match_data_grad(dic):
     return matched
 
 
+def _hash_json(dic):
+    """
+    Hash json parsable object.
+
+    Args:
+        dic (list of dict): Json parsable object.
+
+    Returns:
+        bytes: 32 characters hash
+
+    """
+    return hashlib.md5(json.dumps(dic, sort_keys=True)).hexdigest()
+
+
+def _lock(f):
+    """ decorator which locks class method
+    You need property _lock defined as in the following.
+    self._lock = threading.Lock()
+    """
+    def body(self, *args, **kwargs):
+        with self._lock:
+            return f(self, *args, **kwargs)
+    return body
+
+
 class TimelineHandler(object):
     """
     This class aggregates Timelines to handle a series of training metrics.
+
+    TimelineHandler is controlled with ``session_id`` if read data
+    contradict with previously read data, it will assign new
+    ``session_id``
     """
     def __init__(self):
+        self._lock = threading.Lock()
+        self._clear()
+
+    def _clear(self):
         self.tensors = {}
-        self.events = {}
+        self._events = {}
         self._time_uninitialized = True
         self._done_idx = 0
+        self._digest = None
+        self._session_id = util.random_hash(12)
+
+    @property
+    def session_id(self):
+        return self._session_id
 
     def _initialize_time_keys(self, dic):
         self._epoch_key = _try_find_fallback(dic, 'epoch')
@@ -219,7 +261,7 @@ class TimelineHandler(object):
 
         for k in events.iterkeys():
             events[k].extract_value(dic, epoch, iteration, elapsed_time)
-        self.events.update(events)
+        self._events.update(events)
 
     def _identify_tensors(self, dic, epoch, iteration, elapsed_time):
         # For now just throw them away
@@ -243,14 +285,14 @@ class TimelineHandler(object):
             events[k] = Timeline(k)
         for k in events.iterkeys():
             events[k].extract_value(dic, epoch, iteration, elapsed_time)
-        self.events.update(events)
+        self._events.update(events)
 
-    def extract(self, dic):
+    def _extract(self, dic):
         if self._time_uninitialized:
             self._initialize_time_keys(dic)
         epoch, iteration, elapsed_time = self._extract_time(dic)
-        for k in self.events.iterkeys():
-            self.events[k].extract_value(dic, epoch, iteration, elapsed_time)
+        for k in self._events.iterkeys():
+            self._events[k].extract_value(dic, epoch, iteration, elapsed_time)
         for k in self.tensors.iterkeys():
             self.tensors[k].extract_value(dic, epoch, iteration, elapsed_time)
         self._identify_predefined_metrics(dic, epoch, iteration, elapsed_time)
@@ -258,6 +300,7 @@ class TimelineHandler(object):
         self._identify_misc(dic, epoch, iteration, elapsed_time)
         logger.debug("Ignored keys: %s" % ', '.join(map(str, dic.keys())))
 
+    @_lock
     def update(self, logs):
         """
         Update the handler from log dictionaries.
@@ -270,16 +313,35 @@ class TimelineHandler(object):
                 report from the single output of Reporter.
 
         """
-        while self._done_idx < len(logs):
-            logger.info('Parsing line:%d' % (self._done_idx + 1))
-            self.extract(logs[self._done_idx])
-            self._done_idx += 1
+        digest = _hash_json(logs[:self._done_idx])
+        if self._digest != digest:
+            old_session = self._session_id
+            self._clear()
+            logger.info(
+                "Digest unmatch; setting new session (%s -> %s)" %
+                (old_session, self._session_id)
+            )
+
+        if self._done_idx < len(logs):
+            self._digest = _hash_json(logs)
+            while self._done_idx < len(logs):
+                logger.info('Parsing line:%d' % (self._done_idx + 1))
+                self._extract(logs[self._done_idx])
+                self._done_idx += 1
 
     def get_events_ids(self):
-        return self.events.keys()
+        return self._events.keys()
 
     def get_tensors_ids(self):
         return self.tensors.keys()
+
+    @property
+    def events(self):
+        return self._events
+
+    @property
+    def lock(self):
+        return self._lock
 
     def load(self, path):
         """

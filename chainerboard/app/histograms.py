@@ -16,12 +16,21 @@ logger = logging.getLogger(__name__)
 @app.route('/histograms/data', methods=['GET'])
 def get_histograms_data():
     g = request.args.get('graphId')
+    session_id = request.args.get('sessionId')
+    with timeline_handler.lock:
+        if session_id != timeline_handler.session_id:
+            logger.info(
+                "Session mismatch (it is %s, but request was %s)" %
+                (timeline_handler.session_id, session_id)
+            )
+            return jsonify({'exists': False})
 
-    data = {
-        'x': timeline_handler.tensors[g].iteration,
-        'y': timeline_handler.tensors[g].get_percentiles(),
-        'stateHash': timeline_handler.tensors[g].state_hash
-    }
+        data = {
+            'exists': True,
+            'x': timeline_handler.tensors[g].iteration,
+            'y': timeline_handler.tensors[g].get_percentiles(),
+            'stateHash': timeline_handler.tensors[g].state_hash
+        }
 
     return jsonify(data)
 
@@ -57,40 +66,40 @@ def get_histograms_updates():
 
     """
     session_id = request.json['sessionId']
-    if session_id  == '':
-        # no session id associated
-        session_id = util.random_hash(12)
-        logger.info("creating new session %s" % session_id)
-        states = {}
-        active = {}
-        update_type = "new"
-    else:
-        assert isinstance(session_id, (bytes, unicode)) and len(session_id) == 12
-        states = request.json['states']
-        active = request.json['active']
-        update_type = "update"
+    with timeline_handler.lock:
+        if session_id  == '' or session_id != timeline_handler.session_id:
+            # no session id associated
+            logger.info("creating new session %s" % timeline_handler.session_id)
+            states = {}
+            active = {}
+            update_type = "new"
+        else:
+            assert isinstance(session_id, (bytes, unicode)) and len(session_id) == 12
+            states = request.json['states']
+            active = request.json['active']
+            update_type = "update"
 
-    # First determine graphs to add/update
-    new_plots = []
-    for g in timeline_handler.get_tensors_ids():
-        if g not in states:
-            # Currently does not implent type=append or hidden
-            graph_div = util.random_hash(12)
-            new_plots.append({
-                'type': 'new',
-                'graphDiv': graph_div,
-                'graphId': g
-            })
-            active[graph_div] = g
+        # First determine graphs to add/update
+        new_plots = []
+        for g in timeline_handler.get_tensors_ids():
+            if g not in states:
+                # Currently does not implent type=append or hidden
+                graph_div = util.random_hash(12)
+                new_plots.append({
+                    'type': 'new',
+                    'graphDiv': graph_div,
+                    'graphId': g
+                })
+                active[graph_div] = g
 
-    updates = []
-    for group_id, g in active.iteritems():
-        if timeline_handler.tensors[g].state_hash != states.get(g, ''):
-            updates.append(group_id)
+        updates = []
+        for group_id, g in active.iteritems():
+            if timeline_handler.tensors[g].state_hash != states.get(g, ''):
+                updates.append(group_id)
 
     return jsonify({
         'updateType': update_type,
-        'sessionId': session_id,
+        'sessionId': timeline_handler.session_id,
         'newPlots': new_plots,
         'updates': updates
     })

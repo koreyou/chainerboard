@@ -8,14 +8,18 @@ angular.module('myApp').controller('eventsGraphCtrl', ['$log', '$http', '$interv
 function($log, $http, $interval, $q, $timeout, common) {
 
 var self = this;
-self.sessionId = '';  // 12 character id. Should be empty for uninitialized session
-self.groups = {}; // list of dict (groupId (str) -> list of graph ids (str))
-self.hiddenGraphs = []; // list of graph ids (str)
-self.graphData = {};  // map graph id (str) -> graph obj (object)
-self.graphStates = {}; // map graph id (str) -> graph status hash (str)
-self.movingAverageWindow = {}; // map group id (str) -> window size (int)
-self.isLogarithmatic = {}; // map group id (str) -> if logarithmatic (bool)
-self.graphNames = {}; // map group id (str) -> graph name (str)
+
+self.init = function (sessionId) {
+    self.sessionId = sessionId;  // 12 character id. Should be empty for uninitialized session
+    self.groups = {}; // list of dict (groupId (str) -> list of graph ids (str))
+    self.hiddenGraphs = []; // list of graph ids (str)
+    self.graphData = {};  // map graph id (str) -> graph obj (object)
+    self.graphStates = {}; // map graph id (str) -> graph status hash (str)
+    self.movingAverageWindow = {}; // map group id (str) -> window size (int)
+    self.isLogarithmatic = {}; // map group id (str) -> if logarithmatic (bool)
+    self.graphNames = {}; // map group id (str) -> graph name (str)
+}
+self.init('');
 self.updateInterval= 5;  // Constant for update interval in second
 self.connected = true;  // Status of connection (bool)
 self.next = 0;  // time until the next update (int)
@@ -47,14 +51,19 @@ self.getEventsData = function (graphId) {
     return $q(function(resolve, reject) {
         $log.info("Getting graph data for " + graphId);
         $http.get($SCRIPT_ROOT + '/events/data', {
-            'params': {'graphId': graphId}
+            'params': {'graphId': graphId,
+		       'sessionId': self.sessionId }
         }).
         then(function(response) {
             self.connected = true;
-            self.graphData[graphId][0].x = response.data.x;
-            self.graphData[graphId][0].y = response.data.y;
-            self.graphStates[graphId] = response.data.stateHash;
-            $log.info("Updated graph " + graphId + " with hash " + response.data.stateHash);
+            if(response.data.exists){
+                self.graphData[graphId][0].x = response.data.x;
+                self.graphData[graphId][0].y = response.data.y;
+                self.graphStates[graphId] = response.data.stateHash;
+                $log.info("Updated graph " + graphId + " with hash " + response.data.stateHash);
+            } else {
+                $log.info("Graph " + graphId + " was missing. Reloading occurred?");
+            }
             resolve("operation successful");
         }, function(response) {
             self.connected = false;
@@ -75,7 +84,10 @@ self.update = function() {
     then(function(response) {
         $log.debug("Received response from /events/updates");
         self.connected = true;
-        self.sessionId = response.data.sessionId;
+        if(response.data.updateType == 'new'){
+            $log.info('new session ' + response.data.sessionId);
+            self.init(response.data.sessionId);
+        }
         $.each(response.data.newPlots, function(i, newPlot) {
             self.graphData[newPlot.graphId] = [
                 {

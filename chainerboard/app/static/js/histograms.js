@@ -113,11 +113,14 @@ angular.module('myApp').controller('hitogramsGraphCtrl', ['$log', '$http', '$int
 function($log, $http, $interval, $q, common) {
 
 var self = this;
-self.sessionId = '';  // 12 character id. Should be empty for uninitialized session
-self.graphs = {}; // map from internal hash id to a graph id (str)
-self.hiddenGraphs = []; // list of graph ids (str)
-self.graphData = {};  // map graph id (str) -> graph obj (object)
-self.graphStates = {}; // map graph id (str) -> graph status hash (str)
+self.init = function (sessionId) {
+    self.sessionId = sessionId;  // 12 character id. Should be empty for uninitialized session
+    self.graphs = {}; // map from internal hash id to a graph id (str)
+    self.hiddenGraphs = []; //list of graph ids (str)
+    self.graphData = {};  // map graph id (str) -> graph obj (object)
+    self.graphStates = {}; // map graph id (str) -> graph status hash (str)
+}
+self.init('');
 self.updateInterval= 5;  // Constant for update interval in second
 self.connected = true;  // Status of connection (bool)
 self.next = 0;  // time until the next update (int)
@@ -138,39 +141,46 @@ self.getPlotData = function (graphId) {
     return $q(function(resolve, reject) {
         $log.info("Getting graph data for " + graphId);
         $http.get($SCRIPT_ROOT + '/histograms/data', {
-            'params': {'graphId': graphId}
+            'params': {'graphId': graphId,
+		       'sessionId': self.sessionId }
         }).
         then(function(response) {
             self.connected = true;
-            var colors = generateGradientColors('red', response.data.y.length - 1, 0.5);
-            var data = [];
-            for (var j = 0; j < response.data.y.length; j++) {
-                var d = {
-                    "x": response.data.x,
-                    "y": response.data.y[j].data,
-                    'type': 'scatter',
-                    // 0 width line because fill does not work with mode=none
-                    'mode': "lines",
-                    'line': {'width': 0},
-                    'showlegend': false,
-                    "name": response.data.y[j].label
-                };
-                if (j > 0) {
-                    d.fill = 'tonexty';
-                    d.fillcolor = colors[j - 1];
-                    d.line.color = colors[j - 1];
-                } else {
-                    d.line.color = colors[0];
+            if(response.data.exists){
+
+                var colors = generateGradientColors('red', response.data.y.length - 1, 0.5);
+                var data = [];
+                for (var j = 0; j < response.data.y.length; j++) {
+                    var d = {
+                        "x": response.data.x,
+                        "y": response.data.y[j].data,
+                        'type': 'scatter',
+                        // 0 width line because fill does not work with mode=none
+                        'mode': "lines",
+                        'line': {'width': 0},
+                        'showlegend': false,
+                        "name": response.data.y[j].label
+                    };
+                    if (j > 0) {
+                        d.fill = 'tonexty';
+                        d.fillcolor = colors[j - 1];
+                        d.line.color = colors[j - 1];
+                    } else {
+                        d.line.color = colors[0];
+                    }
+                    if (response.data.y[j].label == '50%') {
+                        d.line.color = 'black';
+                        d.line.width = 3;
+                    }
+                    data.push(d);
                 }
-                if (response.data.y[j].label == '50%') {
-                    d.line.color = 'black';
-                    d.line.width = 3;
-                }
-                data.push(d);
+                self.graphData[graphId] = data;
+                self.graphStates[graphId] = response.data.stateHash;
+                $log.info("Updated graph " + graphId + " with hash " + response.data.stateHash);
+            } else {
+                $log.info("Graph " + graphId + " was missing. Reloading occurred?");
             }
-            self.graphData[graphId] = data;
-            self.graphStates[graphId] = response.data.stateHash;
-            $log.info("Updated graph " + graphId + " with hash " + response.data.stateHash);
+
             resolve("operation successful");
         }, function(response) {
             self.connected = false;

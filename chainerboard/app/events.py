@@ -51,15 +51,24 @@ def _cleanse_plots(x, y):
 @app.route('/events/data', methods=['GET'])
 def get_events_data():
     g = request.args.get('graphId')
+    session_id = request.args.get('sessionId')
     logger.info(g)
+    with timeline_handler.lock:
+        if session_id != timeline_handler.session_id:
+            logger.info(
+                "Session mismatch (it is %s, but request was %s)" %
+                (timeline_handler.session_id, session_id)
+            )
+            return jsonify({'exists': False})
 
-    y = _cleanse_plots(timeline_handler.events[g].iteration,
-                       timeline_handler.events[g].value)
-    data = {
-        'x': timeline_handler.events[g].iteration,
-        'y': y,
-        'stateHash': timeline_handler.events[g].state_hash
-    }
+        y = _cleanse_plots(timeline_handler.events[g].iteration,
+                           timeline_handler.events[g].value)
+        data = {
+            'exists': True,
+            'x': timeline_handler.events[g].iteration,
+            'y': y,
+            'stateHash': timeline_handler.events[g].state_hash
+        }
 
     return jsonify(data)
 
@@ -107,45 +116,45 @@ def get_events_updates():
             The list does includes graphs in newPlots.
 
     """
-    session_id = request.json['sessionId']
-    if session_id  == '':
-        # no session id associated
-        session_id = util.random_hash(12)
-        logger.info("creating new session %s" % session_id)
-        states = {}
-        active = {}
-        update_type = "new"
-    else:
-        assert isinstance(session_id, (bytes, unicode)) and len(session_id) == 12
-        states = request.json['states']
-        active = request.json['active']
-        update_type = "update"
-    graph_to_group = {g: group for group, graphs in active.iteritems()
-                      for g in graphs}
+    with timeline_handler.lock:
+        session_id = request.json['sessionId']
+        if session_id  == '' or session_id != timeline_handler.session_id:
+            # no session id associated
+            logger.info("creating new session %s" % timeline_handler.session_id)
+            states = {}
+            active = {}
+            update_type = "new"
+        else:
+            assert isinstance(session_id, (bytes, unicode)) and len(session_id) == 12
+            states = request.json['states']
+            active = request.json['active']
+            update_type = "update"
+        graph_to_group = {g: group for group, graphs in active.iteritems()
+                          for g in graphs}
 
-    # First determine graphs to add/update
-    new_plots = []
-    for g in timeline_handler.get_events_ids():
-        if g not in states:
-            # Currently does not implent type=append or hidden
-            group_id = util.random_hash(12)
-            new_plots.append({
-                'type': 'new',
-                'groupId': group_id,  # create new group id
-                'name': g,
-                'graphId': g
-            })
-            active[group_id] = [g]
+        # First determine graphs to add/update
+        new_plots = []
+        for g in timeline_handler.get_events_ids():
+            if g not in states:
+                # Currently does not implent type=append or hidden
+                group_id = util.random_hash(12)
+                new_plots.append({
+                    'type': 'new',
+                    'groupId': group_id,  # create new group id
+                    'name': g,
+                    'graphId': g
+                })
+                active[group_id] = [g]
 
-    updates = defaultdict(list)
-    for group_id, graphs in active.iteritems():
-        for g in graphs:
-            if timeline_handler.events[g].state_hash != states.get(g, ''):
-                updates[group_id].append(g)
+        updates = defaultdict(list)
+        for group_id, graphs in active.iteritems():
+            for g in graphs:
+                if timeline_handler.events[g].state_hash != states.get(g, ''):
+                    updates[group_id].append(g)
 
     return jsonify({
         'updateType': update_type,
-        'sessionId': session_id,
+        'sessionId': timeline_handler.session_id,
         'newPlots': new_plots,
         'updates': dict(updates)
     })
