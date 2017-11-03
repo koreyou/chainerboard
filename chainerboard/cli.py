@@ -13,12 +13,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@click.command()
+@click.command('chainerboard')
 @click.argument('inputfile', type=click.Path(exists=True))
-@click.option('-p', '--port', type=int, default=6006)
+@click.option('-p', '--port', type=int, default=6006, help="Port number to use")
 @click.version_option(chainerboard.__version__, prog_name='chainerboard')
 def cli(inputfile, port):
-
+    """
+    An unofficial visualization tool for chainer, inspired by tensorboard
+    chainerboard allows visualization of log from chainer.extensions.LogReport.
+    """
     with watch_file(inputfile, timeline_handler):
         # use_reloader=False because it makes watchdog unstoppable
         app.run(host='0.0.0.0', port=port, use_reloader=False)
