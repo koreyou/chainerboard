@@ -8,7 +8,7 @@ from flask import render_template, redirect, url_for
 
 from chainerboard.app import app
 
-logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 

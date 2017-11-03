@@ -11,7 +11,7 @@ import numpy as np
 from chainerboard import util
 from chainerboard.app import app, timeline_handler
 
-logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 

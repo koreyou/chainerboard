@@ -9,7 +9,7 @@ from flask import jsonify, request
 from chainerboard.app import app, timeline_handler
 from chainerboard import util
 
-logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 
