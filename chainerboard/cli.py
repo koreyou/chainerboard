@@ -5,6 +5,7 @@ import logging
 
 import click
 
+import chainerboard
 from chainerboard.app import app, timeline_handler
 from chainerboard.watcher import watch_file
 
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.argument('inputfile', type=click.Path(exists=True))
 @click.option('-p', '--port', type=int, default=6006)
+@click.version_option(chainerboard.__version__, prog_name='chainerboard')
 def cli(inputfile, port):
 
     with watch_file(inputfile, timeline_handler):
