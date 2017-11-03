@@ -20,12 +20,9 @@ class LogHandler(FileSystemEventHandler):
         super(LogHandler, self).__init__()
 
     def _on_change(self, target_path):
-        try:
-            # FIXME: this is probanly plaform dependent; better way of comparing?
-            target_modified = os.path.samefile(target_path, self._watch_path)
-        except OSError:
-            target_modified = False
-        if target_modified:
+        target_path = os.path.realpath(target_path)
+        watch_path = os.path.realpath(self._watch_path)
+        if target_path == watch_path:
             logger.info("modification detected! Updating %s" % target_path)
             self._timeline_handler.load(target_path)
 
