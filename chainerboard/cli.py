@@ -10,6 +10,8 @@ from chainerboard.app import app, timeline_handler
 from chainerboard.watcher import watch_file
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger('werkzeug').setLevel(logging.WARN)
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,4 +26,5 @@ def cli(inputfile, port):
     """
     with watch_file(inputfile, timeline_handler):
         # use_reloader=False because it makes watchdog unstoppable
+        logger.info('Running on http://localhost:%d' % port)
         app.run(host='0.0.0.0', port=port, use_reloader=False)

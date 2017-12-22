@@ -19,7 +19,7 @@ def get_histograms_data():
     session_id = request.args.get('sessionId')
     with timeline_handler.lock:
         if session_id != timeline_handler.session_id:
-            logger.info(
+            logger.debug(
                 "Session mismatch (it is %s, but request was %s)" %
                 (timeline_handler.session_id, session_id)
             )
@@ -69,7 +69,7 @@ def get_histograms_updates():
     with timeline_handler.lock:
         if session_id  == '' or session_id != timeline_handler.session_id:
             # no session id associated
-            logger.info("creating new session %s" % timeline_handler.session_id)
+            logger.debug("creating new session %s" % timeline_handler.session_id)
             states = {}
             active = {}
             update_type = "new"
