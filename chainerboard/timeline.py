@@ -8,8 +8,10 @@ from __future__ import absolute_import, division, print_function, \
 import logging
 from collections import OrderedDict
 
-from chainerboard.exceptions import KeyDisappearedException
+import six
+
 from chainerboard import util
+from chainerboard.exceptions import KeyDisappearedException
 
 logger = logging.getLogger(__name__)
 
@@ -159,43 +161,48 @@ class TensorTimeline(TimelineBase):
     def __init__(self, data_keys, grad_keys):
         super(TensorTimeline, self).__init__()
         self._data_percentiles_keys = {
-            k: data_keys.pop(k) for k in data_keys.keys() if k.startswith('percentile/')}
+            k: data_keys.pop(k) for k in list(six.iterkeys(data_keys))
+            if k.startswith('percentile/')
+        }
         try:
             self._data_percentiles_names = {
                 k: self._DEFAULT_PERCENTILE_KEYS[k]
-                for k in self._data_percentiles_keys.keys()
+                for k in six.iterkeys(self._data_percentiles_keys)
             }
         except KeyError:
             self._data_percentiles_names = {
-                k: k for k in self._data_percentiles_keys.keys()
+                k: k for k in six.iterkeys(self._data_percentiles_keys)
             }
         self._data_percentiles = OrderedDict(
             ((k, []) for k in sorted(self._data_percentiles_keys.keys()))
         )
-        self._data = {k: [] for k in data_keys.keys()}
+        self._data = {k: [] for k in six.iterkeys(data_keys)}
         self._data_keys = data_keys
 
         self._grad_percentiles_keys = {
-            k: grad_keys.pop(k) for k in grad_keys.keys() if k.startswith('percentile/')}
+            k: grad_keys.pop(k)
+            for k in list(six.iterkeys(grad_keys))
+            if k.startswith('percentile/')
+        }
         self._grad_percentiles = OrderedDict(
             ((k, []) for k in sorted(self._grad_percentiles_keys.keys()))
         )
-        self._grad = {k: [] for k in grad_keys.keys()}
+        self._grad = {k: [] for k in six.iterkeys(grad_keys)}
         self._grad_keys = grad_keys
 
     def _extract_value_impl(self, dic, epoch, iteration, elapsed_time):
-        if next(self._data_percentiles_keys.itervalues()) not in dic:
+        if next(iter(self._data_percentiles_keys.values())) not in dic:
             # Assume tensor is absent in dic
             return False
         self._append_time(epoch, iteration, elapsed_time)
         try:
-            for k, dic_key in self._data_percentiles_keys.iteritems():
+            for k, dic_key in six.iteritems(self._data_percentiles_keys):
                 self._data_percentiles[k].append(dic.pop(dic_key))
-            for k, dic_key in self._data_keys.iteritems():
+            for k, dic_key in six.iteritems(self._data_keys):
                 self._data[k].append(dic.pop(dic_key))
-            for k, dic_key in self._grad_percentiles_keys.iteritems():
+            for k, dic_key in six.iteritems(self._grad_percentiles_keys):
                 self._grad_percentiles[k].append(dic.pop(dic_key))
-            for k, dic_key in self._grad_keys.iteritems():
+            for k, dic_key in six.iteritems(self._grad_keys):
                 self._grad[k].append(dic.pop(dic_key))
         except KeyError:
             raise KeyDisappearedException(dic_key)
@@ -204,7 +211,7 @@ class TensorTimeline(TimelineBase):
     def get_percentiles(self):
         percentiles = [
             {'label': self._data_percentiles_names[k], 'data': v}
-            for k, v in self._data_percentiles.iteritems()
+            for k, v in six.iteritems(self._data_percentiles)
         ]
         if 'min' in self._data and 'max' in self._data:
             percentiles = (
