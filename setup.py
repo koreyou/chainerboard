@@ -32,7 +32,8 @@ setup(
         'Click',
         'flask',
         'watchdog',
-        'numpy>=1.10'
+        'numpy>=1.10',
+        'six'
     ],
     entry_points = {
         'console_scripts': ['chainerboard=chainerboard.cli:cli'],
@@ -46,6 +47,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: Information Analysis"
     ]

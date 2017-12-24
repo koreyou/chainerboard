@@ -5,19 +5,20 @@ import hashlib
 import json
 import logging
 import re
-import string
 import threading
 
+import six
+
+from chainerboard import util
 from chainerboard.exceptions import KeyDisappearedException, ParseError
 from chainerboard.timeline import Timeline, TensorTimeline, MicroAverageTimeline
-from chainerboard import util
 
 logger = logging.getLogger(__name__)
 
 
 def _find_partial_match(dic, key):
     ret = []
-    for k in dic.keys():
+    for k in six.iterkeys(dic):
         if key in k:
             ret.append(k)
     return ret
@@ -40,7 +41,7 @@ def _find_get_patten_match_single(dic, match_func):
     """
     # match_func(str) -> bool
     found_key = None
-    for k in dic.keys():
+    for k in six.iterkeys(dic):
         if match_func(k):
             if found_key is None:
                 found_key = k
@@ -138,10 +139,10 @@ def match_data_grad(dic):
 
     """
     matched = {}
-    for k in dic.keys():
+    for k in six.iterkeys(dic):
         if k.endswith('.std'):
             continue
-        idx = string.find(k, '/data/')
+        idx = k.find('/data/')
         if idx >= 0:
             obj_name = k[:idx]
             if obj_name not in matched:
@@ -150,7 +151,7 @@ def match_data_grad(dic):
                 matched[obj_name]['data'] = {}
             matched[obj_name]['data'][k[idx + 6:]] = k
             continue
-        idx = string.find(k, '/grad/')
+        idx = k.find('/grad/')
         if idx < 0:
             # Not found, so continue the for loop
             continue
@@ -175,7 +176,8 @@ def _hash_json(dic):
         bytes: 32 characters hash
 
     """
-    return hashlib.md5(json.dumps(dic, sort_keys=True)).hexdigest()
+    json_dump = json.dumps(dic, sort_keys=True).encode('utf-8')
+    return hashlib.md5(json_dump).hexdigest()
 
 
 def _lock(f):
@@ -259,7 +261,7 @@ class TimelineHandler(object):
         if total_key in dic and correct_key in dic:
             events[correct_key] = MicroAverageTimeline(total_key, correct_key)
 
-        for k in events.iterkeys():
+        for k in six.iterkeys(events):
             events[k].extract_value(dic, epoch, iteration, elapsed_time)
         self._events.update(events)
 
@@ -267,23 +269,23 @@ class TimelineHandler(object):
         # For now just throw them away
         matched = match_data_grad(dic)
         tensors = {}
-        for name, key_info in matched.iteritems():
+        for name, key_info in six.iteritems(matched):
             data = key_info['data']
             grad = key_info['grad']
             tensors[name] = TensorTimeline(data, grad)
 
-        for k in tensors.iterkeys():
+        for k in six.iterkeys(tensors):
             tensors[k].extract_value(dic, epoch, iteration, elapsed_time)
         self.tensors.update(tensors)
 
     def _identify_misc(self, dic, epoch, iteration, elapsed_time):
         # For now just throw them away
         events = {}
-        for k in dic.keys():
+        for k in six.iterkeys(dic):
             if k.endswith('.std'):
                 continue
             events[k] = Timeline(k)
-        for k in events.iterkeys():
+        for k in six.iterkeys(events):
             events[k].extract_value(dic, epoch, iteration, elapsed_time)
         self._events.update(events)
 
@@ -291,15 +293,15 @@ class TimelineHandler(object):
         if self._time_uninitialized:
             self._initialize_time_keys(dic)
         epoch, iteration, elapsed_time = self._extract_time(dic)
-        for k in self._events.iterkeys():
+        for k in six.iterkeys(self._events):
             self._events[k].extract_value(dic, epoch, iteration, elapsed_time)
-        for k in self.tensors.iterkeys():
+        for k in six.iterkeys(self.tensors):
             self.tensors[k].extract_value(dic, epoch, iteration, elapsed_time)
         self._identify_predefined_metrics(dic, epoch, iteration, elapsed_time)
         self._identify_tensors(dic, epoch, iteration, elapsed_time)
         self._identify_misc(dic, epoch, iteration, elapsed_time)
         if len(dic) > 0:
-            logger.debug("Ignored keys: %s" % ', '.join(map(str, dic.keys())))
+            logger.debug("Ignored keys: %s" % ', '.join(map(str, six.iterkeys(dic))))
 
     @_lock
     def update(self, logs):
@@ -331,10 +333,10 @@ class TimelineHandler(object):
             logger.debug('Parsed up to line:%d' % (self._done_idx))
 
     def get_events_ids(self):
-        return self._events.keys()
+        return list(six.iterkeys(self._events))
 
     def get_tensors_ids(self):
-        return self.tensors.keys()
+        return list(six.iterkeys(self.tensors))
 
     @property
     def events(self):

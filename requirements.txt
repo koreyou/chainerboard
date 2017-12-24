@@ -6,3 +6,4 @@ tox
 Flask
 watchdog
 numpy>=1.10
+six

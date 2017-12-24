@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function, \
 import logging
 
 from flask import jsonify, request
+import six
 
 from chainerboard.app import app, timeline_handler
 from chainerboard import util
@@ -37,7 +38,7 @@ def get_histograms_data():
 
 @app.route('/histograms/updates', methods=['POST'])
 def get_histograms_updates():
-    u"""
+    """
     Given current state, return updates.
     The `Parameters` show the content of payload, and `Returns` show the content
     of return body.
@@ -74,7 +75,7 @@ def get_histograms_updates():
             active = {}
             update_type = "new"
         else:
-            assert isinstance(session_id, (bytes, unicode)) and len(session_id) == 12
+            assert isinstance(session_id, six.string_types) and len(session_id) == 12
             states = request.json['states']
             active = request.json['active']
             update_type = "update"
@@ -93,7 +94,7 @@ def get_histograms_updates():
                 active[graph_div] = g
 
         updates = []
-        for group_id, g in active.iteritems():
+        for group_id, g in six.iteritems(active):
             if timeline_handler.tensors[g].state_hash != states.get(g, ''):
                 updates.append(group_id)
 

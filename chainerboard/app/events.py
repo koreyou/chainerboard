@@ -7,6 +7,7 @@ import warnings
 
 from flask import jsonify, request
 import numpy as np
+import six
 
 from chainerboard import util
 from chainerboard.app import app, timeline_handler
@@ -45,7 +46,8 @@ def _cleanse_plots(x, y):
             mask = np.logical_and(mask, y <= _FLOAT_CUTOFF_MAX)
         if np.isfinite(_FLOAT_CUTOFF_MIN):
             mask = np.logical_and(mask, y >= _FLOAT_CUTOFF_MIN)
-    return [y[i] if mask[i] else 'nan' for i in xrange(len(y))]
+    return [y[i] if mask[i] else 'nan'
+            for i in six.moves.xrange(len(y))]
 
 
 @app.route('/events/data', methods=['GET'])
@@ -85,7 +87,7 @@ def _recursive_find_parent(graph, graph_to_group):
 
 @app.route('/events/updates', methods=['POST'])
 def get_events_updates():
-    u"""
+    """
     Given current state, return updates.
     The `Parameters` show the content of payload, and `Returns` show the content
     of return body.
@@ -125,11 +127,13 @@ def get_events_updates():
             active = {}
             update_type = "new"
         else:
-            assert isinstance(session_id, (bytes, unicode)) and len(session_id) == 12
+            assert (
+                isinstance(session_id, six.string_types) and
+                len(session_id) == 12)
             states = request.json['states']
             active = request.json['active']
             update_type = "update"
-        graph_to_group = {g: group for group, graphs in active.iteritems()
+        graph_to_group = {g: group for group, graphs in six.iteritems(active)
                           for g in graphs}
 
         # First determine graphs to add/update
@@ -147,7 +151,7 @@ def get_events_updates():
                 active[group_id] = [g]
 
         updates = defaultdict(list)
-        for group_id, graphs in active.iteritems():
+        for group_id, graphs in six.iteritems(active):
             for g in graphs:
                 if timeline_handler.events[g].state_hash != states.get(g, ''):
                     updates[group_id].append(g)
