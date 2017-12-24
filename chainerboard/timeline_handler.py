@@ -298,7 +298,8 @@ class TimelineHandler(object):
         self._identify_predefined_metrics(dic, epoch, iteration, elapsed_time)
         self._identify_tensors(dic, epoch, iteration, elapsed_time)
         self._identify_misc(dic, epoch, iteration, elapsed_time)
-        logger.debug("Ignored keys: %s" % ', '.join(map(str, dic.keys())))
+        if len(dic) > 0:
+            logger.debug("Ignored keys: %s" % ', '.join(map(str, dic.keys())))
 
     @_lock
     def update(self, logs):
@@ -317,7 +318,7 @@ class TimelineHandler(object):
         if self._digest != digest:
             old_session = self._session_id
             self._clear()
-            logger.info(
+            logger.debug(
                 "Digest unmatch; setting new session (%s -> %s)" %
                 (old_session, self._session_id)
             )
@@ -325,9 +326,9 @@ class TimelineHandler(object):
         if self._done_idx < len(logs):
             self._digest = _hash_json(logs)
             while self._done_idx < len(logs):
-                logger.info('Parsing line:%d' % (self._done_idx + 1))
                 self._extract(logs[self._done_idx])
                 self._done_idx += 1
+            logger.debug('Parsed up to line:%d' % (self._done_idx))
 
     def get_events_ids(self):
         return self._events.keys()
