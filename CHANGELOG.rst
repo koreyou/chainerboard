@@ -4,13 +4,28 @@
 CHANGELOG
 =============
 
+v0.1.5
+-------------
+
+* Feature:
+
+  * Compatibility with Python 3 (#14)
+  * Quiettend log level (#11)
+  * Added `--version` to CLI (#7)
+  * Added help message to CLI
+
+* Bugfix:
+
+  * Detect changes in irrerelvant files (#10)
+
+
 v0.1.4
 -------------
 
 * Bugfix:
 
-    * Auto-update was not working
-    * It was occasionally causing OSError (#5)
+  * Auto-update was not working
+  * It was occasionally causing OSError (#5)
 
 
 v0.1.3
@@ -18,7 +33,7 @@ v0.1.3
 
 * Bugfix:
 
-    * Hot fix for a syntactic bug introduced in v0.1.2
+  * Hot fix for a syntactic bug introduced in v0.1.2
 
 
 v0.1.2
@@ -26,7 +41,7 @@ v0.1.2
 
 * Bugfix:
 
-    * Plotting fails when 'Infinity' is present (#2)
+  * Plotting fails when 'Infinity' is present (#2)
 
 v0.1.1
 -------------
